@@ -1,7 +1,7 @@
 import copy
 import numpy as np
 
-from SUPER_Learning.SUPER_maps import *
+from learning.SUPER_maps import *
 
 torch.manual_seed(1738)
 np.random.seed(1738)
