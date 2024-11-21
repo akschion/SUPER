@@ -16,7 +16,7 @@ For 3D input algorithms, points are assumed to have unit norm. For general solut
 Thanks to [jacobi_pd](https://github.com/jewettaij/jacobi_pd) for providing symmetric matrix diagonalization code!
 
 ## Representations for Learning Rotations in Neural Networks
-The folder `learning` has PyTorch implementations of rotation representations for learning (**2-vec** and **QuadMobius**). They are easy to drag and drop into any model pipeline to map neural network outputs to a rotation:
+PyTorch implementations of proposed rotation representations for learning (**2-vec** and **QuadMobius**) in `learning` folder. They are easy to drag and drop into any model pipeline to map neural network outputs to a rotation:
 ```
 import torch
 from learning.SUPER_maps import *
