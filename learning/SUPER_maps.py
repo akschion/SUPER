@@ -150,8 +150,8 @@ class QuadMobiusRotationSolver(torch.autograd.Function):
             #gradient from normalized quaternion to unnormalized quaternion
             q_norm = torch.clip(torch.sqrt(torch.sum(q_u * q_u, dim=1, keepdim=True)), min=eps)
             q, gn = q_u / q_norm, grad_output / q_norm
-            dq = torch.einsum('ij,ik->ijk', q, -q)
-            dqn = torch.sum(dq * gn.view(-1, 1, 4), dim=-1) + gn
+            dq = q * torch.sum(-q * gn, dim=-1, keepdim=True)
+            dqn = dq + gn
 
             #gradient from nearest (unnormalized) quaternion to Mobius transformation
             dq0, dq1, dq2, dq3 = dqn[:, 0], dqn[:, 1], dqn[:, 2], dqn[:, 3]
