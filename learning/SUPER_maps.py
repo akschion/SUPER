@@ -89,17 +89,26 @@ class QuadMobiusRotationSolver(torch.autograd.Function):
         M = M_opt.view(-1, 2, 2)
 
         if alg_fwd:
-            # normalize Mobius transformation to have det(M) = 1
-            Q = M / torch.sqrt(torch.linalg.det(M)).view(-1, 1, 1) #assume nonzero
+            # Previous method. Algebraic backpropagation formulas derived from this method
+            # # normalize Mobius transformation to have det(M) = 1
+            # Q = M / torch.sqrt(torch.linalg.det(M)).view(-1, 1, 1) #assume nonzero
+            # # find nearest special unitary matrix via quaternion
+            # sigma, xi, gamma, delta = Q[:, 0, 0], Q[:, 0, 1], Q[:, 1, 0], Q[:, 1, 1]
+            # q_u = torch.stack([torch.real(sigma) + torch.real(delta),
+            #                    -torch.imag(xi) - torch.imag(gamma),
+            #                    torch.real(xi) - torch.real(gamma),
+            #                    torch.imag(sigma) - torch.imag(delta)], dim=1)
+            # q = q_u / torch.linalg.norm(q_u, dim=1, keepdim=True) #assume nonzero
 
-            #find nearest special unitary matrix via quaternion
-            sigma, xi, gamma, delta = Q[:, 0, 0], Q[:, 0, 1], Q[:, 1, 0], Q[:, 1, 1]
-            q_u = torch.stack([torch.real(sigma) + torch.real(delta),
-                               -torch.imag(xi) - torch.imag(gamma),
-                               torch.real(xi) - torch.real(gamma),
-                               torch.imag(sigma) - torch.imag(delta)], dim=1)
-            q = q_u / torch.linalg.norm(q_u, dim=1, keepdim=True) #assume nonzero
-            ctx.save_for_backward(A, M_opt, eigvals[:, 0], q_u)
+            #normalize Mobius transformation so nearest unitary matrix is special unitary
+            conj_det = torch.conj(torch.linalg.det(M))
+            det_norm = complex_mag(conj_det)
+            Q = M * torch.sqrt(conj_det / (det_norm * (2 * det_norm + 1.))).view(-1, 1, 1) #assumes |M_opt| = 1 from eigh
+            #map to quaternion. Note ||q|| = 1 since normalization factor built-in above
+            alpha, beta = Q[:, 0, 0] + torch.conj(Q[:, 1, 1]), Q[:, 0, 1] - torch.conj(Q[:, 1, 0])
+            q = torch.stack([torch.real(alpha), -torch.imag(beta), torch.real(beta), torch.imag(alpha)], dim=1)
+
+            ctx.save_for_backward(A, M_opt, eigvals[:, 0])
         else:
             #find nearest unitary matrix via SVD
             U, S, Vh = torch.linalg.svd(M)
@@ -119,7 +128,7 @@ class QuadMobiusRotationSolver(torch.autograd.Function):
     def backward(ctx, grad_output):
 
         if ctx.alg_fwd:
-            A, M_opt, eigval, q_u = ctx.saved_tensors
+            A, M_opt, eigval = ctx.saved_tensors
         else:
             A, M_opt, eigval, u, s, vh = ctx.saved_tensors
         n = A.shape[0]
@@ -133,15 +142,10 @@ class QuadMobiusRotationSolver(torch.autograd.Function):
             root_det[zero_det_mask] = eps * torch.exp(1j * complex_angle(root_det[zero_det_mask]))
             Q = M / root_det
 
-            if not ctx.alg_fwd:
-                #recalculate q_u since not calculated in forward pass
-
-                #find nearest special unitary matrix via quaternion
-                sigma, xi, gamma, delta = Q[:, 0, 0], Q[:, 0, 1], Q[:, 1, 0], Q[:, 1, 1]
-                q_u = torch.stack([torch.real(sigma) + torch.real(delta),
-                                   -torch.imag(xi) - torch.imag(gamma),
-                                   torch.real(xi) - torch.real(gamma),
-                                   torch.imag(sigma) - torch.imag(delta)], dim=1)
+            #map to unnormalized quaternion
+            sigma, xi, gamma, delta = Q[:, 0, 0], Q[:, 0, 1], Q[:, 1, 0], Q[:, 1, 1]
+            alpha, beta = sigma + torch.conj(delta), xi - torch.conj(gamma)
+            q_u = torch.stack([torch.real(alpha), -torch.imag(beta), torch.real(beta), torch.imag(alpha)], dim=1)
 
             #gradient from normalized quaternion to unnormalized quaternion
             q_norm = torch.clip(torch.sqrt(torch.sum(q_u * q_u, dim=1, keepdim=True)), min=eps)
@@ -178,7 +182,7 @@ class QuadMobiusRotationSolver(torch.autograd.Function):
             #gradient from unitary matrix to Mobius transformation
             #i.e. backward pass through polar factor of polar decomposition of 2x2 complex matrix
             #polar factor of polar decomposition is given by UV^H for SVD(M) = USV^H
-            #least-norm least squares solution to continuous Lyapunov equation via truncated SVD
+            #least-norm least squares solution to continuous Lyapunov equation
             trace_sigma = torch.sum(s, dim=1)
             sigma_outer_sum = torch.stack([2 * s[:, 0], trace_sigma, trace_sigma, 2 * s[:, 1]], dim=1).view(-1, 1, 1, 2, 2)
             dA = torch.einsum('ijk,ilm->ijmlk', u, vh)
