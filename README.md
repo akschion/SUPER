@@ -1,7 +1,14 @@
 # Special Unitary Parameterized Estimators of Rotation (SUPER)
 [![arXiv](https://img.shields.io/badge/arXiv-2411.13109-b31b1b.svg)](https://arxiv.org/abs/2411.13109)
+[![ICLR 2026](https://img.shields.io/badge/ICLR-2026-blue.svg)](https://iclr.cc/virtual/2026/poster/10009126)
 
 💥Code for paper [Special Unitary Parameterized Estimators of Rotation](https://arxiv.org/abs/2411.13109) 🌐🌀🔢🧠
+
+Accepted at **ICLR 2026** with highest average review score of any submission (nearly ~20k total).
+
+<p align="center">
+  <img src="ICLR_2026_SUPER_Poster.png" alt="SUPER ICLR 2026 Poster" width="800"/>
+</p>
 
 ## Rotation Estimation from Point Correspondences
 C++ code for classic Wahba's problem in `wahba` folder. `SUPER.hpp` includes the following algorithms:
@@ -38,3 +45,15 @@ q = QuadMobiusRotationSolver.apply(input_data2, alg_bkwd, alg_fwd) # N x 4 tenso
 input_data3 = torch.randn(batch_size, 10, dtype=torch.complex64) # N x 10 complex data
 q = QuadMobiusRotationSolver.apply(input_data3, alg_bkwd, alg_fwd) # N x 4 tensor of quaternions (w, x, y, z)
 ```
+
+## Citation
+
+If you find this work useful, please cite:
+
+```bibtex
+@inproceedings{SUPER,
+  title={Special Unitary Parameterized Estimators of Rotation},
+  author={Akshay Chandrasekhar},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2026}
+}
