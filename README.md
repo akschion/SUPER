@@ -10,6 +10,8 @@ Accepted at **ICLR 2026** with highest average review score of any submission (n
   <img src="ICLR_2026_SUPER_Poster.png" alt="SUPER ICLR 2026 Poster" width="800"/>
 </p>
 
+> 🚀 **UPDATE 07/14/26:** Improved QuadMobius formulations for faster, more accurate computations! ⚡🔢
+
 ## Rotation Estimation from Point Correspondences
 C++ code for classic Wahba's problem in `wahba` folder. `SUPER.hpp` includes the following algorithms:
 -  General solution for stereographic point inputs (G_P)
